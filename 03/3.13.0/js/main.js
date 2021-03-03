@@ -130,17 +130,30 @@
             yAxisGroup.call(yAxisCall);
 
 
+            // JOIN new data with old elements
             const bars1 = graph.selectAll('rect')
                 .data(data);
 
+            // EXIT (remove) old elements not present in new data
+            bars1.exit().remove();
+
+            // UPDATE old elements present in new data.
+            // (For this project, this is nearly identical to the styling of the new elements.)
+            bars1
+                .attr('x', d => xScale(d.month))
+                .attr('y', d => yScale(d.revenue))
+                .attr('width', xScale.bandwidth())
+                .attr('height', d => hGraph - yScale(d.revenue));
+
+            // ENTER new elements present in new data
             bars1.enter()
                 .append('rect')
-                .attr('x', (d, i) => xScale(d.month))
-                .attr('y', (d) => yScale(d.revenue))
+                .attr('x', d => xScale(d.month))
+                .attr('y', d => yScale(d.revenue))
                 .attr('width', xScale.bandwidth())
                 .attr('height', d => hGraph - yScale(d.revenue))
                 .attr('fill', d => fillMap(d.month))
-                .attr('stroke', 'black')
+                .attr('stroke', 'black');
 
             // bars1.enter()
             //     .append('rect')
