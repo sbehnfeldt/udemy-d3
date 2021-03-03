@@ -31,6 +31,8 @@
         let fillMap;
         let fillMap2;
 
+        let flag;
+
         function init(selector) {
             $chart = $(selector);
             chart = d3.select(selector);
@@ -97,7 +99,9 @@
                     d.profit = Number(d.profit);
                 });
 
+                flag = true;
                 d3.interval(() => {
+                    flag = !flag;
                     update(data);
                 }, 1000);
 
@@ -109,8 +113,10 @@
         }
 
         function update(data) {
+            const value = flag ? "profit" : "revenue";
+
             xScale.domain(data.map(d => d.month));
-            yScale.domain([0, d3.max(data, d => d.revenue)]);
+            yScale.domain([0, d3.max(data, d => d.revenue > d.profit ? d.revenue : d.profit )]);
             fillMap.domain(data.map(d => d.month));
             fillMap2.domain(data.map(d => d.month));
 
@@ -141,29 +147,23 @@
             // (For this project, this is nearly identical to the styling of the new elements.)
             bars1
                 .attr('x', d => xScale(d.month))
-                .attr('y', d => yScale(d.revenue))
+                .attr('y', d => yScale(d[value]))
                 .attr('width', xScale.bandwidth())
-                .attr('height', d => hGraph - yScale(d.revenue));
+                .attr('height', d => hGraph - yScale(d[value]))
+                .attr('fill', d => flag ? fillMap(d.month) : fillMap2(d.month))
 
             // ENTER new elements present in new data
             bars1.enter()
                 .append('rect')
                 .attr('x', d => xScale(d.month))
-                .attr('y', d => yScale(d.revenue))
+                .attr('y', d => yScale(d[value]))
                 .attr('width', xScale.bandwidth())
-                .attr('height', d => hGraph - yScale(d.revenue))
+                .attr('height', d => hGraph - yScale(d[value]))
                 .attr('fill', d => fillMap(d.month))
                 .attr('stroke', 'black');
 
-            // bars1.enter()
-            //     .append('rect')
-            //     .attr('x', (d, i) => xScale(d.month))
-            //     .attr('y', (d) => yScale(d.revenue))
-            //     .attr('width', xScale.bandwidth())
-            //     .attr('height', d => hGraph - yScale(d.profit))
-            //     .attr('fill', d => fillMap2(d.month))
-            //     .attr('stroke', 'black');
-
+            const text = flag ? "Profit ($)" : "Revenue ($)";
+            yLabel.text(text);
         }
 
         return { init, load };
