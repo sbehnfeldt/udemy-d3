@@ -7,90 +7,112 @@
 ;(function (global, $) {
     'use strict';
 
-    // Document ready handler
-    $(function () {
-        console.log('Document ready');
+    let Widget = (function (){
 
-        const $chart = $('#chart-area');
-        const chart = d3.select('#chart-area');
+        let $chart;
+        let chart;
 
-        const wChart = $chart.width();
-        const hChart = 500;
+        let svg;       // The full chart: graph plus axis plus labels
+        let graph;     // The "graphy" part of the chart
 
-        const margin = {top: 100, right: 100, bottom: 100, left: 100};
-        const wGraph = wChart - margin.left - margin.right;
-        const hGraph = hChart - margin.top - margin.bottom;
+        let xLabel;    // Label for the X-Axis
+        let xAxisGroup;
+        let xScale;    // Scale in the X-direction
 
-        // The full chart: graph plus axis plus labels
-        const svg = chart
-            .append('svg')
-            .attr('width', wChart)
-            .attr('height', hChart);
+        let yLabel;    // Label for Y axis
+        let yAxisGroup;
+        let yScale;    // Scale in the Y-direction
 
-        // The "graphy" part of the graph.  Offset it from the upper-left (0, 0)
-        const graph = svg.append('g')
-            .attr('transform', `translate(${margin.left}, ${margin.top})`);
+        let wChart;
+        let hChart;
+        let margin;
+        let wGraph;
+        let hGraph;
+        let fillMap;
+        let fillMap2;
+
+        function init(selector) {
+            $chart = $(selector);
+            chart = d3.select(selector);
+
+            wChart = $chart.width();
+            hChart = 500;
+            margin = {top: 100, right: 100, bottom: 100, left: 100};
+            wGraph = wChart - margin.left - margin.right;
+            hGraph = hChart - margin.top - margin.bottom;
+
+            svg = chart
+                .append('svg')
+                .attr('width', wChart)
+                .attr('height', hChart);
+
+            // Offset it from the upper-left (0, 0)
+            graph = svg.append('g')
+                .attr( 'class', 'graph')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+            xLabel = graph.append('text')
+                .attr('class', 'x-axis-label')
+                .attr('x', wGraph / 2)
+                .attr('y', hGraph + 60)
+                .attr('font-size', '20px')
+                .attr('text-anchor', 'middle')
+                .text('Month');
+
+             xAxisGroup = graph.append('g')
+                .attr('class', 'x-axis')
+                .attr('transform', `translate(0, ${hGraph})`)
+
+            yLabel = graph.append("text")
+                .attr("class", "y axis-label")
+                .attr("x", -hGraph / 2)
+                .attr("y", -55)
+                .attr('font-size', '20px')
+                .attr('text-anchor', 'middle')
+                .attr('transform', "rotate(-90)")
+                .text('Profit over Revenue');
+
+            yAxisGroup = graph.append('g')
+                .attr('class', 'y-axis');
+
+            xScale = d3.scaleBand()
+                .range([0, wGraph])
+                .paddingInner(0.3)
+                .paddingOuter(0.2);
+
+            yScale = d3.scaleLinear()
+                .range([hGraph, 0]);
+
+            fillMap = d3.scaleOrdinal().range(d3.schemeCategory10);
+            fillMap2 = d3.scaleOrdinal().range(['#53AFED', '#f4ab6b', '#1dd317', '#f76767', '#BF94E8', '#DD8675', '#EDA8D7']);
+        }
 
 
-        // Label for the X-Axis
-        graph.append('text')
-            .attr('class', 'x-axis-label')
-            .attr('x', wGraph / 2)
-            .attr('y', hGraph + 60)
-            .attr('font-size', '20px')
-            .attr('text-anchor', 'middle')
-            .text('Month');
+        function load(filename) {
+            d3.csv(filename).then(data => {
 
-        const xAxisGroup = graph.append('g')
-            .attr('class', 'x-axis')
-            .attr('transform', `translate(0, ${hGraph})`)
+                // Convert revenue and profit (imported as strings) into numbers
+                data.forEach(d => {
+                    d.revenue = Number(d.revenue);
+                    d.profit = Number(d.profit);
+                });
 
-        // Label for Y axis
-        graph.append("text")
-            .attr("class", "y axis-label")
-            .attr("x", -hGraph / 2)
-            .attr("y", -55)
-            .attr('font-size', '20px')
-            .attr('text-anchor', 'middle')
-            .attr('transform', "rotate(-90)")
-            .text('Profit over Revenue');
+                d3.interval(() => {
+                    update(data);
+                }, 1000);
 
-        const yAxisGroup = graph.append('g')
-            .attr('class', 'y-axis');
-
-
-        // Scale in the X-direction
-        const xScale = d3.scaleBand()
-            .range([0, wGraph])
-            .paddingInner(0.3)
-            .paddingOuter(0.2);
-
-        // Scale in the Y-direction
-        const yScale = d3.scaleLinear()
-            .range([hGraph, 0]);
-
-
-        d3.csv('data/revenues.csv').then(data => {
-
-            // Convert revenue and profit (imported as strings) into numbers
-            data.forEach(d => {
-                d.revenue = Number(d.revenue);
-                d.profit = Number(d.profit);
-            });
-
-            d3.interval(() => {
                 update(data);
-            }, 1000);
 
-            update(data);
-
-        }).catch(error => {
-            console.log(error);
-        });
+            }).catch(error => {
+                console.log(error);
+            });
+        }
 
         function update(data) {
             xScale.domain(data.map(d => d.month));
             yScale.domain([0, d3.max(data, d => d.revenue)]);
+            fillMap.domain(data.map(d => d.month));
+            fillMap2.domain(data.map(d => d.month));
 
             // X Axis
             const xAxisCall = d3.axisBottom(xScale);
@@ -108,25 +130,17 @@
             yAxisGroup.call(yAxisCall);
 
 
-            // const fillMap = d3.scaleOrdinal()
-            //     .domain(data.map(d => d.month))
-            //     .range(d3.schemeCategory10);
-            //
-            // const fillMap2 = d3.scaleOrdinal()
-            //     .domain(data.map(d => d.month))
-            //     .range(['#53AFED', '#f4ab6b', '#1dd317', '#f76767', '#BF94E8', '#DD8675', '#EDA8D7']);
+            const bars1 = graph.selectAll('rect')
+                .data(data);
 
-            // const bars1 = graph.selectAll('rect')
-            //     .data(data);
-
-            // bars1.enter()
-            //     .append('rect')
-            //     .attr('x', (d, i) => xScale(d.month))
-            //     .attr('y', (d) => yScale(d.revenue))
-            //     .attr('width', xScale.bandwidth())
-            //     .attr('height', d => hGraph - yScale(d.revenue))
-            //     .attr('fill', d => fillMap(d.month))
-            //     .attr('stroke', 'black')
+            bars1.enter()
+                .append('rect')
+                .attr('x', (d, i) => xScale(d.month))
+                .attr('y', (d) => yScale(d.revenue))
+                .attr('width', xScale.bandwidth())
+                .attr('height', d => hGraph - yScale(d.revenue))
+                .attr('fill', d => fillMap(d.month))
+                .attr('stroke', 'black')
 
             // bars1.enter()
             //     .append('rect')
@@ -136,7 +150,17 @@
             //     .attr('height', d => hGraph - yScale(d.profit))
             //     .attr('fill', d => fillMap2(d.month))
             //     .attr('stroke', 'black');
+
         }
 
+        return { init, load };
+
+    })();
+
+    // Document ready handler
+    $(function () {
+        console.log('Document ready');
+        Widget.init('#chart-area');
+        Widget.load('data/revenues.csv');
     });
 })(this, jQuery);
