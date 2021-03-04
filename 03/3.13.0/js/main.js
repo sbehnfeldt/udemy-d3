@@ -7,7 +7,7 @@
 ;(function (global, $) {
     'use strict';
 
-    let Widget = (function (){
+    let Widget = (function () {
 
         let $chart;
         let chart;
@@ -17,11 +17,11 @@
 
         let xLabel;    // Label for the X-Axis
         let xAxisGroup;
-        let xScale;    // Scale in the X-direction
+        let x;    // Scale in the X-direction
 
         let yLabel;    // Label for Y axis
         let yAxisGroup;
-        let yScale;    // Scale in the Y-direction
+        let y;    // Scale in the Y-direction
 
         let wChart;
         let hChart;
@@ -50,7 +50,7 @@
 
             // Offset it from the upper-left (0, 0)
             graph = svg.append('g')
-                .attr( 'class', 'graph')
+                .attr('class', 'graph')
                 .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
             xLabel = graph.append('text')
@@ -61,7 +61,7 @@
                 .attr('text-anchor', 'middle')
                 .text('Month');
 
-             xAxisGroup = graph.append('g')
+            xAxisGroup = graph.append('g')
                 .attr('class', 'x-axis')
                 .attr('transform', `translate(0, ${hGraph})`)
 
@@ -77,12 +77,12 @@
             yAxisGroup = graph.append('g')
                 .attr('class', 'y-axis');
 
-            xScale = d3.scaleBand()
+            x = d3.scaleBand()
                 .range([0, wGraph])
                 .paddingInner(0.3)
                 .paddingOuter(0.2);
 
-            yScale = d3.scaleLinear()
+            y = d3.scaleLinear()
                 .range([hGraph, 0]);
 
             fillMap = d3.scaleOrdinal().range(d3.schemeCategory10);
@@ -102,7 +102,8 @@
                 flag = true;
                 d3.interval(() => {
                     flag = !flag;
-                    update(data);
+                    const newData = flag ? data : data.slice(1);
+                    update(newData);
                 }, 1000);
 
                 update(data);
@@ -114,15 +115,16 @@
 
         function update(data) {
             const value = flag ? "profit" : "revenue";
+            const t = d3.transition().duration(750);
 
-            xScale.domain(data.map(d => d.month));
-            yScale.domain([0, d3.max(data, d => d.revenue > d.profit ? d.revenue : d.profit )]);
+            x.domain(data.map(d => d.month));
+            y.domain([0, d3.max(data, d => d[value])]);
             fillMap.domain(data.map(d => d.month));
             fillMap2.domain(data.map(d => d.month));
 
             // X Axis
-            const xAxisCall = d3.axisBottom(xScale);
-            xAxisGroup.call(xAxisCall)
+            const xAxisCall = d3.axisBottom(x);
+            xAxisGroup.transition(t).call(xAxisCall)
                 .selectAll('text')
                 .attr('y', 10)
                 .attr('x', -5)
@@ -130,43 +132,45 @@
                 .attr('transform', 'rotate(-60)');
 
             // Y Axis
-            const yAxisCall = d3.axisLeft(yScale)
-                .tickSize(4)
+            const yAxisCall = d3.axisLeft(y)
+                .ticks(3)
                 .tickFormat(d => `$${d}`);
-            yAxisGroup.call(yAxisCall);
+            yAxisGroup.transition(t).call(yAxisCall);
 
 
             // JOIN new data with old elements
             const bars1 = graph.selectAll('rect')
-                .data(data);
+                .data(data, d => d.month);
 
             // EXIT (remove) old elements not present in new data
-            bars1.exit().remove();
-
-            // UPDATE old elements present in new data.
-            // (For this project, this is nearly identical to the styling of the new elements.)
-            bars1
-                .attr('x', d => xScale(d.month))
-                .attr('y', d => yScale(d[value]))
-                .attr('width', xScale.bandwidth())
-                .attr('height', d => hGraph - yScale(d[value]))
-                .attr('fill', d => flag ? fillMap(d.month) : fillMap2(d.month))
+            bars1.exit()
+                .attr('fill', 'red')
+                .transition(t)
+                .attr('height', 0)
+                .attr('y', y(0))
+                .remove();
 
             // ENTER new elements present in new data
             bars1.enter()
                 .append('rect')
-                .attr('x', d => xScale(d.month))
-                .attr('y', d => yScale(d[value]))
-                .attr('width', xScale.bandwidth())
-                .attr('height', d => hGraph - yScale(d[value]))
+                .attr('stroke', 'black')
                 .attr('fill', d => fillMap(d.month))
-                .attr('stroke', 'black');
+                .attr('y', y(0))
+                .attr('height', 0)
+
+                // AND UPDATE old elements present in new data
+                .merge(bars1)
+                .transition(t)
+                .attr('x', d => x(d.month))
+                .attr('width', x.bandwidth())
+                .attr('y', d => y(d[value]))
+                .attr('height', d => hGraph - y(d[value]))
 
             const text = flag ? "Profit ($)" : "Revenue ($)";
             yLabel.text(text);
         }
 
-        return { init, load };
+        return {init, load};
 
     })();
 
