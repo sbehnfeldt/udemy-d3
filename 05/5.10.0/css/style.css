@@ -1,3 +1,24 @@
+
+.navbar-brand {
+	height: 60px;
+	padding: 5px 0;
+}
+
+.chart {
+	height: 1000px;
+	border: 1px solid saddlebrown;
+}
+
+.year-label {
+	font-size: 5rem;
+	font-weight: 800;
+	opacity: .8;
+}
+
+svg circle {
+	opacity: .8;
+}
+
 #chart-area {
 	margin-left: auto;
 	margin-right: auto;
@@ -6,9 +27,4 @@
 
 #logo {
 	height:50px;
-}
-
-.navbar-brand {
-	height: 60px;
-	padding: 5px 0px;
 }
