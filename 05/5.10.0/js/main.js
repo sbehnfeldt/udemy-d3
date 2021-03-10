@@ -24,6 +24,12 @@
         let yScale;
         let yearLabel;
 
+        let fillColors = {
+            'europe' : 'saddlebrown',
+            'asia' : 'red',
+            'americas' : 'yellow',
+            'africa' : 'blue'
+        };
 
         function init(selector) {
             let tempX, tempY;
@@ -91,6 +97,28 @@
                 .text( '1800');
 
 
+            const legend = svg.append( 'g')
+                .attr('class', 'legend')
+                .attr('transform', `translate(${$chart.width() - MARGIN.right}, ${$chart.height() - MARGIN.top - MARGIN.bottom})`)
+
+            let i = 0;
+            for ( let p in fillColors) {
+                const legendRow = legend.append('g')
+                    .attr('transform', `translate(0, ${i * 20})`);
+
+                legendRow.append('rect')
+                    .attr('width', 10)
+                    .attr('height', 10)
+                    .attr('fill', fillColors[p]);
+                legendRow.append('text')
+                    .text(p)
+                    .style('text-transform', 'capitalize')
+                    .attr('x', -10)
+                    .attr('y', 10)
+                    .attr('text-anchor', 'end')
+                i++;
+            }
+
             return this;
         }
 
@@ -114,12 +142,6 @@
 
 
         function update(data) {
-            let fillColors = {
-                'europe' : 'saddlebrown',
-                'asia' : 'red',
-                'americas' : 'yellow',
-                'africa' : 'blue'
-            };
             let t = d3.transition().duration(.55 * updateInterval);
 
             const dots = graph.selectAll('circle')
