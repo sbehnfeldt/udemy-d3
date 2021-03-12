@@ -12,7 +12,7 @@
         let $chart;
 
         const MARGIN = {top: 100, right: 100, bottom:100, left: 100};
-        const updateInterval = 100;
+        const updateInterval = 500;
 
         let svg;
         let graph;
@@ -23,6 +23,7 @@
         let yAxisGroup;
         let yScale;
         let yearLabel;
+        let tip;
 
         let fillColors = {
             'europe' : 'saddlebrown',
@@ -35,7 +36,6 @@
             let tempX, tempY;
             $chart = $(selector);
             chart = d3.select(selector);
-            console.log( $chart.height(), ' ', $chart.width())
 
             svg = chart.append('svg')
                 .attr('width', $chart.width())
@@ -44,6 +44,19 @@
             graph = svg.append('g')
                 .attr('class', 'graph')
                 .attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`);
+
+
+            tip = d3.tip()
+                .attr('class', 'd3-tip')
+                .html(d=>{
+                    let text = `<strong>Country: </strong><span style="color: red">${d.country}</span><br>`
+                    text += `<strong>Continent: </strong><span style="color: red; text-transform: capitalize">${d.continent}</span><br>`
+                    text += `<strong>Life Expectancy: </strong><span style="color: red">${d3.format('.2f')(d.life_exp)}</span><br>`
+                    text += `<strong>GDP Per Capita: </strong><span style="color: red">${d3.format('$,.0f')(d.income)}</span><br>`
+                    text += `<strong>Population: </strong><span style="color: red">${d3.format(',.0f')(d.population)}</span><br>`
+                    return text;
+                });
+            graph.call(tip);
 
 
             xLabel = svg.append('text')
@@ -152,8 +165,10 @@
 
             dots.enter()
                 .append('circle')
+                .on('mouseout', tip.hide)
+                .on('mouseover', tip.show)
                 .transition(t)
-                .attr('cx', d => d.income ? xScale(d.income) : 0 )
+                .attr('cx', d => d.income ?  xScale(d.income) : 0 )
                 .attr('cy', d => d.life_exp ? yScale(d.life_exp) : yScale(0) )
                 .attr('r', d => Math.sqrt(d.population / 3.14)/100)
                 .attr('fill', d => fillColors[d.continent]);
