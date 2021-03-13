@@ -1,3 +1,15 @@
+#controls {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+}
+
+#controls button {
+	flex: 0 0 5rem;
+}
+#controls select {
+	flex: 0 0 15rem;
+}
 
 .navbar-brand {
 	height: 60px;
@@ -5,8 +17,7 @@
 }
 
 .chart {
-	height: 1000px;
-	border: 1px solid saddlebrown;
+	height: 750px;
 }
 
 .year-label {

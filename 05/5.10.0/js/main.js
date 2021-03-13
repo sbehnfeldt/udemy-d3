@@ -12,7 +12,7 @@
         let $chart;
 
         const MARGIN = {top: 100, right: 100, bottom:100, left: 100};
-        const updateInterval = 500;
+        const updateInterval = 100;
 
         let svg;
         let graph;
@@ -25,15 +25,20 @@
         let yearLabel;
         let tip;
 
+        let currentStep;
+        let interval;
+
+        let formattedData;
+        let baseYear;
+
         let fillColors = {
             'europe' : 'saddlebrown',
             'asia' : 'red',
-            'americas' : 'yellow',
+            'americas' : '#eee600',
             'africa' : 'blue'
         };
 
         function init(selector) {
-            let tempX, tempY;
             $chart = $(selector);
             chart = d3.select(selector);
 
@@ -66,14 +71,12 @@
                 .attr('font-size', '20px')
                 .text('GDP Per Capita ($)');
 
-            tempX = MARGIN.left;
-            tempY = $chart.height() - MARGIN.bottom;
             xAxisGroup = svg.append('g')
                 .attr('class', 'x-axis-group')
-                .attr('transform', `translate(${tempX}, ${tempY})`);
+                .attr('transform', `translate(${MARGIN.left}, ${$chart.height() - MARGIN.bottom})`);
 
             xScale = d3.scaleLog()
-                .domain([40, 40000])
+                .domain([100, 100000])
                 .range([1, $chart.width() - MARGIN.left - MARGIN.bottom]);
 
             const xAxisCall = d3.axisBottom(xScale)
@@ -89,11 +92,9 @@
                 .attr('y', MARGIN.left / 2)
                 .text('Life Expectancy (Years)');
 
-            tempX = MARGIN.left;
-            tempY = MARGIN.top;
             yAxisGroup = svg.append('g')
                 .attr('class', 'y-axis-group')
-                .attr('transform', `translate(${tempX}, ${tempY})`);
+                .attr('transform', `translate(${MARGIN.left}, ${MARGIN.top})`);
 
             yScale = d3.scaleLinear()
                 .range([0, $chart.height() - MARGIN.top - MARGIN.bottom])
@@ -104,8 +105,8 @@
 
             yearLabel = svg.append( 'text')
                 .attr( 'class', 'year-label' )
-                .attr( 'x', $chart.width() / 2 )
-                .attr( 'y', $chart.height() - MARGIN.top - MARGIN.bottom)
+                .attr( 'x', MARGIN.left + 10 )
+                .attr( 'y', $chart.height() - MARGIN.top - 10 )
                 .attr( 'fill', 'green' )
                 .text( '1800');
 
@@ -132,6 +133,26 @@
                 i++;
             }
 
+            $('#play-button').on('click', function() {
+                const button = $(this);
+                if ( 'Play' === button.text()) {
+                    button.text('Pause');
+                    interval = setInterval(step, updateInterval);
+                } else {
+                    button.text('Play');
+                    clearInterval(interval);
+                }
+            });
+
+            $('#reset-button').on('click', () => {
+                currentStep = 0;
+                update(formattedData[0]);
+            });
+
+            $('#continent-select').on('change', () => {
+                update(formattedData[ currentStep ]);
+            });
+
             return this;
         }
 
@@ -139,30 +160,47 @@
         function load(filename) {
             d3.json(filename).then(function (data) {
                 console.log(data);
-                update(data[0])
+                baseYear = Number(data[0].year);
 
-                let i = 1;
-                let interval = d3.interval(() => {
-                    update(data[i]);
-                    i++;
-                    if ( i >= data.length ) {
-                        // interval.stop();
-                        i = 0;
-                    }
-                }, updateInterval);
+                formattedData = data.map(year => {
+                    return year['countries'].filter(country => {
+                        return (country.income && country.life_exp);
+                    }).map(country => {
+                        country.income = Number(country.income);
+                        country.life_exp = Number(country.life_exp);
+                        return country;
+                    });
+                });
+                console.log( formattedData);
+
+                currentStep = -1;
+                step();
             });
         }
 
+        function step() {
+            currentStep++;
+            if (currentStep >= formattedData.length) {
+                currentStep = 0;
+            }
+            update(formattedData[currentStep]);
+        }
 
         function update(data) {
             let t = d3.transition().duration(.55 * updateInterval);
 
+            const continent = $('#continent-select').val();
+            const filteredData = data.filter(d=> {
+                if ( 'all' === continent) {
+                    return true;
+                }
+                return ( continent === d.continent );
+            });
+
+            yearLabel.text( baseYear + currentStep );
             const dots = graph.selectAll('circle')
-                .data(data.countries, d => d.country);
-            yearLabel.text( data.year );
-
+                .data(filteredData, d => d.country);
             dots.exit().remove();
-
             dots.enter()
                 .append('circle')
                 .on('mouseout', tip.hide)
@@ -177,7 +215,7 @@
             dots.transition(t)
                 .attr('cx', d => d.income ? xScale(d.income) : 0 )
                 .attr('cy', d => d.life_exp ? yScale(d.life_exp) : yScale(0) )
-                .attr('r', d => Math.sqrt(d.population / 3.14)/250)
+                .attr('r', d => Math.sqrt(d.population / 3.14)/100)
                 .attr('fill', d => fillColors[d.continent]);
         }
 
