@@ -153,6 +153,16 @@
                 update(formattedData[ currentStep ]);
             });
 
+            $('#date-slider').slider({
+                min: 1800,
+                max: 2014,
+                step: 1,
+                slide:(event, ui) => {
+                    currentStep = ui.value - 1800;
+                    update(formattedData[ currentStep ]);
+                }
+            });
+
             return this;
         }
 
@@ -190,14 +200,14 @@
             let t = d3.transition().duration(.55 * updateInterval);
 
             const continent = $('#continent-select').val();
-            const filteredData = data.filter(d=> {
-                if ( 'all' === continent) {
+            const filteredData = data.filter(d => {
+                if ('all' === continent) {
                     return true;
                 }
-                return ( continent === d.continent );
+                return (continent === d.continent);
             });
 
-            yearLabel.text( baseYear + currentStep );
+            yearLabel.text(baseYear + currentStep);
             const dots = graph.selectAll('circle')
                 .data(filteredData, d => d.country);
             dots.exit().remove();
@@ -206,19 +216,21 @@
                 .on('mouseout', tip.hide)
                 .on('mouseover', tip.show)
                 .transition(t)
-                .attr('cx', d => d.income ?  xScale(d.income) : 0 )
-                .attr('cy', d => d.life_exp ? yScale(d.life_exp) : yScale(0) )
-                .attr('r', d => Math.sqrt(d.population / 3.14)/100)
+                .attr('cx', d => d.income ? xScale(d.income) : 0)
+                .attr('cy', d => d.life_exp ? yScale(d.life_exp) : yScale(0))
+                .attr('r', d => Math.sqrt(d.population / 3.14) / 100)
                 .attr('fill', d => fillColors[d.continent]);
 
 
             dots.transition(t)
-                .attr('cx', d => d.income ? xScale(d.income) : 0 )
-                .attr('cy', d => d.life_exp ? yScale(d.life_exp) : yScale(0) )
-                .attr('r', d => Math.sqrt(d.population / 3.14)/100)
+                .attr('cx', d => d.income ? xScale(d.income) : 0)
+                .attr('cy', d => d.life_exp ? yScale(d.life_exp) : yScale(0))
+                .attr('r', d => Math.sqrt(d.population / 3.14) / 100)
                 .attr('fill', d => fillColors[d.continent]);
-        }
 
+            $('#year')[0].innerHTML = String(currentStep + 1800);
+            $('#date-slider').slider('value', Number(currentStep + 1800));
+        }
         return {init, load};
     })();
 
