@@ -39,11 +39,12 @@
             yAxis.append("text")
                 .attr("class", "axis-title")
                 .attr("transform", "rotate(-90)")
-                .attr("y", 6)
+                .attr("y", -30)
+                .attr('x', -100)
                 .attr("dy", ".71em")
                 .style("text-anchor", "end")
                 .attr("fill", "#5D6971")
-                .text("Population")
+                .text("Price (USD)")
 
             line = d3.line();
             resize();
@@ -52,7 +53,7 @@
 
 
         function resize() {
-            MARGIN = {LEFT: 20, RIGHT: 100, TOP: 50, BOTTOM: 100}
+            MARGIN = {LEFT: 50, RIGHT: 100, TOP: 50, BOTTOM: 100}
             WIDTH = 800 - MARGIN.LEFT - MARGIN.RIGHT
             HEIGHT = 500 - MARGIN.TOP - MARGIN.BOTTOM
             svg.attr("width", WIDTH + MARGIN.LEFT + MARGIN.RIGHT)
@@ -63,9 +64,9 @@
             xAxis.attr("transform", `translate(0, ${HEIGHT})`);
 
             yScale.range([HEIGHT, 0]);
-            line.x(d => xScale(d.year))
-                .y(d => yScale(d.value));
-            return this;
+            line.x(d => xScale(d.date))
+                .y(d => yScale(d.price_usd));
+
         }
 
 
@@ -82,9 +83,8 @@
                         d.market_cap = Number(d.market_cap)
                         d.price_usd = Number(d.price_usd)
                     });
-                    console.log(data[p]);
                 }
-                // update(data);
+                update(data.bitcoin);
             });
 
             return this;
@@ -92,12 +92,14 @@
 
 
         function update(data) {
+            console.log(data);
+
             // set scale domains
-            xScale.domain(d3.extent(data, d => d.year))
+            xScale.domain(d3.extent(data, d => d.date));
             yScale.domain([
-                d3.min(data, d => d.value) / 1.005,
-                d3.max(data, d => d.value) * 1.005
-            ])
+                d3.min(data, d => d.price_usd) / 1.005,
+                d3.max(data, d => d.price_usd) * 1.005
+            ]);
 
             // generate axes once scales have been set
             xAxis.call(xAxisCall.scale(xScale))
@@ -109,7 +111,7 @@
                 .attr("fill", "none")
                 .attr("stroke", "grey")
                 .attr("stroke-width", "3px")
-                .attr("d", line(data))
+                .attr("d", line(data));
 
             /******************************** Tooltip Code ********************************/
 
@@ -148,10 +150,10 @@
                 const d0 = data[i - 1]
                 const d1 = data[i]
                 const d = x0 - d0.year > d1.year - x0 ? d1 : d0
-                focus.attr("transform", `translate(${xScale(d.year)}, ${yScale(d.value)})`)
-                focus.select("text").text(d.value)
-                focus.select(".x-hover-line").attr("y2", HEIGHT - yScale(d.value))
-                focus.select(".y-hover-line").attr("x2", -xScale(d.year))
+                focus.attr("transform", `translate(${xScale(d.date)}, ${yScale(d.price_usd)})`)
+                focus.select("text").text(d.price_usd)
+                focus.select(".x-hover-line").attr("y2", HEIGHT - yScale(d.price_usd))
+                focus.select(".y-hover-line").attr("x2", -xScale(d.date))
             }
 
             /******************************** Tooltip Code ********************************/
