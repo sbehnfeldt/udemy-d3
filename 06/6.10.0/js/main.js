@@ -25,7 +25,7 @@
             $widget = $(selector);
             svg = d3.select("#chart-area").append("svg");
             graph = svg.append("g");
-            parseTime = d3.timeParse("%Y");
+            parseTime = d3.timeParse("%d/%m/%Y");
             bisectDate = d3.bisector(d => d.year).left;
 
             xScale = d3.scaleTime();
@@ -72,11 +72,19 @@
         function load(filename) {
             d3.json(filename).then(data => {
                 // clean data
-                data.forEach(d => {
-                    d.year = parseTime(d.year)
-                    d.value = Number(d.value)
-                });
-                update(data);
+                console.log(data);
+                for ( let p in data ) {
+                    let currency = data[p];
+
+                    currency.forEach(d => {
+                        d.date = parseTime(d.date);
+                        d['24h_vol'] = Number(d['24h_vol']);
+                        d.market_cap = Number(d.market_cap)
+                        d.price_usd = Number(d.price_usd)
+                    });
+                    console.log(data[p]);
+                }
+                // update(data);
             });
 
             return this;
@@ -155,7 +163,7 @@
 
     $(function() {
         Widget.init('#chart-area');
-        Widget.load( 'data/example.json');
+        Widget.load( 'data/coins.json');
     });
 
 
