@@ -91,28 +91,35 @@
 
 
         function load(filename) {
-            d3.json(filename).then(json => {
-                // clean data
-                console.log(json);
-                for ( let p in json ) {
-                    let currency = json[p];
-                    let index = currency.length - 1;
-                    while ( index >= 0 ) {
-                        if ( !currency[index].market_cap) {
-                            currency.splice(index, 1);
+            d3.json(filename)
+                .then(json => {
+                    console.log(json);
+
+                    // Clean data
+                    // For each currency, find the datum at which "real values" begin;
+                    // trim off all the data before that
+                    for (let p in json) {
+                        let currency = json[p];
+                        let i = 0;
+                        while (i < currency.length) {
+                            if (currency[i].market_cap) {
+                                currency.splice(0, i);
+                                break;
+                            }
+                            i++;
                         }
-                        index--;
+
+                        // Parse each string in the resultant data set into dates and integers accordingly
+                        currency.forEach((d, item, array) => {
+                            d.date = parseTime(d.date);
+                            d['24h_vol'] = Number(d['24h_vol']);
+                            d.market_cap = Number(d.market_cap)
+                            d.price_usd = Number(d.price_usd)
+                        });
                     }
-                    currency.forEach((d, item, array) => {
-                        d.date = parseTime(d.date);
-                        d['24h_vol'] = Number(d['24h_vol']);
-                        d.market_cap = Number(d.market_cap)
-                        d.price_usd = Number(d.price_usd)
-                    });
-                }
-                data = json;
-                update($('#coin-select').val(), $('#var-select').val());
-            });
+                    data = json;
+                    update($('#coin-select').val(), $('#var-select').val());
+                });
 
             return this;
         }
