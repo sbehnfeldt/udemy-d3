@@ -24,6 +24,10 @@
         let MARGIN, WIDTH, HEIGHT;
         let data;
 
+        let $coinSelect;  // Drop down list to select which currency to graph
+        let $varSelect;   // Drop down list to select which variable of the currency to graph
+        let $slider;      // Date range sliderr
+
 
         function init(selector) {
             $widget = $(selector);
@@ -32,15 +36,30 @@
             parseTime = d3.timeParse("%d/%m/%Y");
             bisectDate = d3.bisector(d => d.year).left;
 
-            $('#coin-select').on('change', function() {
-                update($('#coin-select').val(), $('#var-select').val());
+            $coinSelect =$('#coin-select');
+            $coinSelect.on('change', function() {
+                $slider.slider("option", "max", data[$coinSelect.val()].length);
+                $slider.slider("option", "values", [ 0, data[$coinSelect.val()].length]);
+                update($coinSelect.val(), $varSelect.val());
             });
 
-            $('#var-select').on('change', function() {
-                line.y(d => yScale(d[$('#var-select').val()]));
+            $varSelect = $('#var-select');
+            $varSelect.on('change', function() {
+                line.y(d => yScale(d[$varSelect.val()]));
                 // yAxisCall = yAxisCall.tickFormat($('#var-select').val());
-                update($('#coin-select').val(), $('#var-select').val());
+                update($coinSelect.val(), $varSelect.val());
             });
+
+            // Initialize the slider with some sensible values, and attach a listener onto the slide event to trigger your update() function.
+            $slider = $('#date-slider');
+            $slider.slider({
+                step:1,
+                range: true,
+                slide: (event, ui) => {
+                    update($coinSelect.val(), $varSelect.val(), $slider.slider("option", "values"));
+                }
+            });
+
 
             xScale = d3.scaleTime();
             xAxisCall = d3.axisBottom();
@@ -118,31 +137,43 @@
                         });
                     }
                     data = json;
-                    update($('#coin-select').val(), $('#var-select').val());
+
+                    // Set the max value of the slider to the extent of the cleansed data
+                    let max = data[$coinSelect.val()].length - 1;
+                    $slider.slider("option", "max", max);
+                    $slider.slider("option", "values", [ 0, max ]);
+
+                    update($coinSelect.val(), $varSelect.val(), 0, max);
                 });
 
             return this;
         }
 
 
-        function update(currency, val) {
+        function update(currency, val, range) {
+            let start, stop;
             let t = d3.transition().duration(1000);
 
             // set scale domains
             xScale.domain(d3.extent(data[currency], d => d.date));
             xAxis.transition(t).call(xAxisCall.scale(xScale))
 
-
             yScale.domain([
                 d3.min(data[currency], d => d[val]) / 1.005,
                 d3.max(data[currency], d => d[val]) * 1.005
             ]);
-
             yAxis.transition(t).call(yAxisCall.scale(yScale))
 
-            // add line to chart
-            path.transition(t).attr('d', line(data[currency]));
+            if ( undefined === range ) {
+                start = 0;
+                stop = data[currency].length - 1;
+            } else {
+                start = range[0];
+                stop = range[1];
+            }
 
+            // add line to chart
+            path.transition(t).attr('d', line(data[currency].slice(start, stop)));
 
 
             /******************************** Tooltip Code ********************************/
@@ -177,15 +208,15 @@
                 .on("mousemove", mousemove)
 
             function mousemove() {
-                const x0 = xScale.invert(d3.mouse(this)[0])
-                const i = bisectDate(data, x0, 1)
-                const d0 = data[i - 1]
-                const d1 = data[i]
-                const d = x0 - d0.year > d1.year - x0 ? d1 : d0
-                focus.attr("transform", `translate(${xScale(d.date)}, ${yScale(d.price_usd)})`)
-                focus.select("text").text(d.price_usd)
-                focus.select(".x-hover-line").attr("y2", HEIGHT - yScale(d.price_usd))
-                focus.select(".y-hover-line").attr("x2", -xScale(d.date))
+            //     const x0 = xScale.invert(d3.mouse(this)[0])
+            //     const i = bisectDate(data, x0, 1)
+            //     const d0 = data[i - 1]
+            //     const d1 = data[i]
+            //     const d = x0 - d0.year > d1.year - x0 ? d1 : d0
+            //     focus.attr("transform", `translate(${xScale(d.date)}, ${yScale(d.price_usd)})`)
+            //     focus.select("text").text(d.price_usd)
+            //     focus.select(".x-hover-line").attr("y2", HEIGHT - yScale(d.price_usd))
+            //     focus.select(".y-hover-line").attr("x2", -xScale(d.date))
             }
 
             /******************************** Tooltip Code ********************************/
