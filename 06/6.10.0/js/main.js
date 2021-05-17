@@ -26,7 +26,7 @@
 
         let $coinSelect;  // Drop down list to select which currency to graph
         let $varSelect;   // Drop down list to select which variable of the currency to graph
-        let $slider;      // Date range sliderr
+        let $slider;      // Date range slider
 
 
         function init(selector) {
@@ -175,6 +175,13 @@
             // add line to chart
             path.transition(t).attr('d', line(data[currency].slice(start, stop)));
 
+            // Update Date Range text according to the date range slider control
+            let c = $coinSelect.val();
+            let d = data[c];
+            let d1 = d[range[0]].date;
+            let d2 = d[range[1]].date;
+            $('#dateLabel1').text(`${d1.getMonth()}/${d1.getDate()}/${d1.getFullYear()}`);
+            $('#dateLabel2').text(`${d2.getMonth()}/${d2.getDate()}/${d2.getFullYear()}`);
 
             /******************************** Tooltip Code ********************************/
 
