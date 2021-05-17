@@ -143,7 +143,7 @@
                     $slider.slider("option", "max", max);
                     $slider.slider("option", "values", [ 0, max ]);
 
-                    update($coinSelect.val(), $varSelect.val(), 0, max);
+                    update($coinSelect.val(), $varSelect.val(), [0, max]);
                 });
 
             return this;
