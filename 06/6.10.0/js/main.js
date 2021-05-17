@@ -154,8 +154,18 @@
             let start, stop;
             let t = d3.transition().duration(1000);
 
+            if ( undefined === range ) {
+                start = 0;
+                stop = data[currency].length - 1;
+            } else {
+                start = range[0];
+                stop = range[1];
+            }
+            let subset = data[currency].slice(start, stop);
+
+
             // set scale domains
-            xScale.domain(d3.extent(data[currency], d => d.date));
+            xScale.domain(d3.extent(subset, d => d.date));
             xAxis.transition(t).call(xAxisCall.scale(xScale))
 
             yScale.domain([
@@ -164,16 +174,9 @@
             ]);
             yAxis.transition(t).call(yAxisCall.scale(yScale))
 
-            if ( undefined === range ) {
-                start = 0;
-                stop = data[currency].length - 1;
-            } else {
-                start = range[0];
-                stop = range[1];
-            }
 
             // add line to chart
-            path.transition(t).attr('d', line(data[currency].slice(start, stop)));
+            path.transition(t).attr('d', line(subset));
 
             // Update Date Range text according to the date range slider control
             let c = $coinSelect.val();
