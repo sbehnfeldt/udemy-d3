@@ -34,20 +34,20 @@
             svg = d3.select("#chart-area").append("svg");
             graph = svg.append("g");
             parseTime = d3.timeParse("%d/%m/%Y");
-            bisectDate = d3.bisector(d => d.year).left;
+            bisectDate = d3.bisector(d => d.date).left;
 
             $coinSelect =$('#coin-select');
             $coinSelect.on('change', function() {
                 $slider.slider("option", "max", data[$coinSelect.val()].length);
-                $slider.slider("option", "values", [ 0, data[$coinSelect.val()].length]);
-                update($coinSelect.val(), $varSelect.val());
+                $slider.slider("option", "values", [ 0, data[$coinSelect.val()].length - 1]);
+                update($coinSelect.val(), $varSelect.val(), $slider.slider("option", "values"));
             });
 
             $varSelect = $('#var-select');
             $varSelect.on('change', function() {
                 line.y(d => yScale(d[$varSelect.val()]));
                 // yAxisCall = yAxisCall.tickFormat($('#var-select').val());
-                update($coinSelect.val(), $varSelect.val());
+                update($coinSelect.val(), $varSelect.val(), $slider.slider("option", "values"));
             });
 
             // Initialize the slider with some sensible values, and attach a listener onto the slide event to trigger your update() function.
@@ -143,7 +143,7 @@
                     $slider.slider("option", "max", max);
                     $slider.slider("option", "values", [ 0, max ]);
 
-                    update($coinSelect.val(), $varSelect.val(), [0, max]);
+                    update($coinSelect.val(), $varSelect.val(), $slider.slider("option", "values"));
                 });
 
             return this;
@@ -218,15 +218,16 @@
                 .on("mousemove", mousemove)
 
             function mousemove() {
-            //     const x0 = xScale.invert(d3.mouse(this)[0])
-            //     const i = bisectDate(data, x0, 1)
-            //     const d0 = data[i - 1]
-            //     const d1 = data[i]
-            //     const d = x0 - d0.year > d1.year - x0 ? d1 : d0
-            //     focus.attr("transform", `translate(${xScale(d.date)}, ${yScale(d.price_usd)})`)
-            //     focus.select("text").text(d.price_usd)
-            //     focus.select(".x-hover-line").attr("y2", HEIGHT - yScale(d.price_usd))
-            //     focus.select(".y-hover-line").attr("x2", -xScale(d.date))
+                const x0 = xScale.invert(d3.mouse(this)[0]);   // Get x value
+                const i = bisectDate(subset, x0, 1);
+                const d0 = subset[i - 1];
+                const d1 = subset[i];
+                const d = x0 - d0.year > d1.year - x0 ? d1 : d0
+
+                focus.attr("transform", `translate(${xScale(d.date)}, ${yScale(d.price_usd)})`)
+                focus.select("text").text(d.price_usd)
+                focus.select(".x-hover-line").attr("y2", HEIGHT - yScale(d.price_usd))
+                focus.select(".y-hover-line").attr("x2", -xScale(d.date))
             }
 
             /******************************** Tooltip Code ********************************/
